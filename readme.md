@@ -41,9 +41,11 @@ input_lengths : 由 序列长度组成的 `B`个元素， [T]*B
 
 target_lengths : 每个标签的长度
 
+
 识别中使用 Sigmoid 函数效果和使用Softmax函数效果对比
 
-车牌识别结果：(数据集问题导致，省份识别结果较差)
+
+车牌识别结果：(数据集问题导致省份识别结果较差)
 ```python
 input label :  0_0_0_0_24_30_26 蓝牌
 pred  label :  0_0_0_0_24_30_26 蓝牌
