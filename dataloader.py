@@ -19,6 +19,10 @@ provinces2 = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "�
 ads = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T',
        'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'O']
 
+# # ctc loss data index
+carNum = ["-"] + provinces2 + ads
+provincesNum = len(provinces2)
+
 class dataloder(Dataset):
     def __init__(self, dirpath, imagesize, number=None):
         super(dataloder, self).__init__()
@@ -91,7 +95,7 @@ class dataloder(Dataset):
         new_image = torch.from_numpy(new_image)
 
         new_mask = new_mask.astype(np.float)
-        # new_mask = new_mask[None, ...]
+        new_mask = new_mask[None, ...]
         new_mask = new_mask
         new_mask = torch.from_numpy(new_mask)
 
@@ -99,10 +103,11 @@ class dataloder(Dataset):
 
 
 class carNumloder(Dataset):
-    def __init__(self, imagesize: tuple, dirpath=None, ImageList=None, number=None):
+    def __init__(self, imagesize: tuple, dirpath=None, ImageList=None, number=None,ctc=None):
         super(carNumloder, self).__init__()
         self.dirpath = dirpath
         self.imagesize = imagesize
+        self.ctc = ctc
 
         if ImageList is None:
             self.ImageList = os.listdir(self.dirpath)
@@ -138,16 +143,21 @@ class carNumloder(Dataset):
 
         labels = []
         for index, i in enumerate(basename):
-            if index==0:
+            if index == 0:
                 labels.append(float(i)+1)
             else:
-                labels.append(float(i) + len(provinces2)+1 )
+                labels.append(float(i) + provincesNum +1)
         labels = np.array(labels)
         labels = labels.reshape(1, -1)
-        if labels.shape[1] == 7:
-            labels = np.concatenate((np.array(0).reshape(1, 1), labels, np.array(255).reshape(1, 1)), 1)
-        if labels.shape[1] == 8:
-            labels = np.concatenate((np.array(1).reshape(1, 1), labels), 1)
+        if not self.ctc:
+            if labels.shape[1] == 7:
+                labels = np.concatenate((np.array(0).reshape(1, 1), labels, np.array(255).reshape(1, 1)), 1)
+            if labels.shape[1] == 8:
+                labels = np.concatenate((np.array(1).reshape(1, 1), labels), 1)
+        else:
+            if labels.shape[1] == 7:
+                labels = np.concatenate((labels, np.array(255).reshape(1, 1)), 1)
+
         labels = labels[0]
 
         image = imageio.imread(imgpath)

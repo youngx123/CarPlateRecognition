@@ -6,6 +6,7 @@ import torch.nn as nn
 # from .backbone import get_model
 import torch.nn.functional as F
 import math
+from einops.layers.torch import Rearrange
 
 provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣", "鲁", "豫",
              "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
@@ -64,10 +65,27 @@ class MaxPoooling(nn.Sequential):
         super(MaxPoooling, self).__init__(avpool, conv)
 
 
-class Recg(nn.Module):
-    def __init__(self, image_size, class_num=len(provinces2) + len(ads)):
-        super(Recg, self).__init__()
+class BiLSTM(nn.Module):
+    def __init__(self, nIn, nHidden, nOut):
+        super(BiLSTM, self).__init__()
 
+        self.rnn = nn.LSTM(nIn, nHidden, bidirectional=True)
+        self.embedding = nn.Linear(nHidden * 2, nOut)
+
+    def forward(self, input):
+        recurrent, _ = self.rnn(input)
+        T, b, h = recurrent.size()
+        t_rec = recurrent.view(T * b, h)
+
+        output = self.embedding(t_rec)  # [T * b, nOut]
+        output = output.view(T, b, -1)
+
+        return output
+
+class Recg(nn.Module):
+    def __init__(self, image_size, class_num=len(provinces2) + len(ads), ctc=False):
+        super(Recg, self).__init__()
+        self.ctc = ctc
         self.image_size = image_size
         self.avg_size = (self.image_size[0] // 32, self.image_size[1] // 32)
         self.class_num = class_num
@@ -86,8 +104,15 @@ class Recg(nn.Module):
 
         self.layer5 = Conv3BnRelu(self.filters[3], self.filters[4])
         self.pool5 = MaxPoooling(self.filters[4])
-
-        self.conv = nn.Conv2d(self.filters[4], (class_num) * 9, kernel_size=1, bias=True)
+        if self.ctc:
+            class_num +=1
+            self.conv = nn.Sequential(
+                Rearrange("b c h w-> b (h w) c"),
+                Rearrange("b t c -> t b c"),
+                BiLSTM(self.filters[4], self.filters[4], class_num),
+            )
+        else:
+            self.conv = nn.Conv2d(self.filters[4], (class_num) * 9, kernel_size=1, bias=True)
 
         for m in self.modules():
             if isinstance(m, nn.Module):
@@ -114,15 +139,18 @@ class Recg(nn.Module):
         feat = self.pool3(self.layer3(feat))
         feat = self.pool4(self.layer4(feat))
         feat = self.pool5(self.layer5(feat))
-
-        feat = F.avg_pool2d(feat, kernel_size=self.avg_size, stride=self.avg_size)
-        feat = self.conv(feat)
-        feat = feat.view(-1, self.class_num, 9)
+        if self.ctc:
+            feat = self.conv(feat)
+            feat = F.log_softmax(feat, dim=2)
+        else:
+            feat = F.avg_pool2d(feat, kernel_size=self.avg_size, stride=self.avg_size)
+            feat = self.conv(feat)
+            feat = feat.view(-1, self.class_num, 9)
         return feat
 
 
 if __name__ == '__main__':
-    net = Recg((64, 192))
+    net = Recg((64, 192), ctc=True)
     a = torch.randn((8, 3, 64, 192))
     out = net(a)
     print(out.shape)

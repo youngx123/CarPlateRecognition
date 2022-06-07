@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn.functional as F
 import os
+from dataloader import provinces2, provincesNum, carNum
 
 
 def evalSegModel(segpt):
@@ -51,21 +52,41 @@ def evalSegModel(segpt):
         new_image[:newH, :newW, :] = data[:, :, :] / 255.0
         new_image = torch.from_numpy(new_image).permute(2, 0, 1).unsqueeze(0).float()
         pred = model(new_image)
-
+        
+        # # use softmax activation function 
         # pred = pred[0].permute(1, 2, 0).cpu().detach()
-        pred = F.softmax(pred, 1)
-        pred = torch.argmax(pred, 1)
-        pred = pred[0].detach().numpy() * 255
-        pred = np.array(pred).astype("uint8")
+        # pred = F.softmax(pred, 1)
+        # pred = torch.argmax(pred, 1)
+        # pred = pred[0].detach().numpy() * 255
+        # pred = np.array(pred).astype("uint8")
+        
+        # # use sigmoid activation function 
+        pred = pred[0][0].detach().numpy()
+        pred[pred >= 0.3] = 255
+        pred[pred < 0.3] = 0
         pred2 = cv2.resize(pred, (iW, iH))
         pred2 = cv2.cvtColor(pred2, cv2.COLOR_GRAY2RGB)
-        weight = cv2.addWeighted(data0, 0.4, pred2, 0.6, 0)
+        # weight = cv2.addWeighted(data0, 0.4, pred2, 0.6, 0)
 
         # pred = pred[0][0].cpu().detach()
         # pred[pred > 0.5] = 1
         plt.subplot(1, 2, 2)
-        plt.imshow(weight)
+        plt.imshow(pred2)
         plt.show()
+
+
+def CTC_Decode(pred):
+    _, preds = pred.max(2)
+    pred = preds.transpose(1, 0).contiguous().view(-1)
+    char_list = []
+    for i in range(len(pred)):
+        if pred[i] != 0 and (not (i > 0 and pred[i - 1] == pred[i])):
+            char_list.append(pred[i].item())
+
+    char_list1 = [i - 1 for i in char_list]
+    char_list2 = [c - provincesNum for c in char_list1[1:]]
+    result = [char_list1[0]] + char_list2
+    return "_".join([str(i) for i in result])
 
 
 def evalRcgModel(rcgpath):
@@ -88,6 +109,9 @@ def evalRcgModel(rcgpath):
         "dataset/test/rcgtest/0_0_0_1_26_28_31.png",
         "dataset/test/rcgtest/29_0_5_25_31_29_29_29.png"
     ]
+    imgdir = r"D:\MyNAS\CarPlate\dataset\test\rcgtest"
+    imgpath = os.listdir(imgdir)
+    imgpath = [os.path.join(imgdir, file) for file in imgpath]
     for file in imgpath:
         data0 = imageio.imread(file)
 
@@ -101,28 +125,33 @@ def evalRcgModel(rcgpath):
         data = torch.from_numpy(data).unsqueeze(0).float()
 
         pred = model(data)
-
-        pred = pred[0].permute(1, 0).cpu().detach()
-        pred = F.softmax(pred, 1)
-        pred = torch.argmax(pred, 1)
-        pred = pred.numpy()
-        car_category = pred[0]
-        predres = []
-        for idex, i in enumerate(pred[1:]):
-            if idex == 0:
-                i = i - 1
-            if idex > 0:
-                i -= 32
-            predres.append(i)
-        if car_category == 0:
-            predres = predres[:-1]
-
-        print("input label : ", os.path.basename(file).split(".")[0], end="\t\t")
-        print("pred label : ", predres, end="\n")
+        # #use ctc loss
+        predres = CTC_Decode(pred)
+        
+        # #use softmax Classifier
+        # pred = pred[0].permute(1, 0).cpu().detach()
+        # pred = F.softmax(pred, 1)
+        # pred = torch.argmax(pred, 1)
+        # pred = pred.numpy()
+        # car_category = pred[0]
+        # predres = []
+        # for idex, i in enumerate(pred[1:]):
+        #     if idex == 0:
+        #         i = i - 1
+        #     if idex > 0:
+        #         i -= 32
+        #     predres.append(i)
+        # if car_category == 0:
+        #     predres = predres[:-1]
+        label = os.path.basename(file).split(".")[0]
+        label_lenth = [i for i in label.split("_")]
+        print("input label : ", label, "蓝牌" if len(label_lenth) == 7 else "绿牌", end="\n")
+        print("pred  label : ", predres, "蓝牌" if len(label_lenth) == 7 else "绿牌")
+        print("*" * 40)
 
 
 if __name__ == '__main__':
-    # segpath = "segmodel_best.pt"
+    segpath = "sigmoidModel.pt"
     # evalSegModel(segpath)
 
     rcgpath = "recg_best.pt"
