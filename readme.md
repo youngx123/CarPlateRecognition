@@ -84,6 +84,6 @@ input label :  29_0_5_25_31_29_29_29 绿牌
 pred  label :  0_0_5_25_31_29_29_29 绿牌
 ****************************************
 ```
-CTC decode
+  CTC decode
 
 >https://github.com/meijieru/crnn.pytorch/blob/master/utils.py
