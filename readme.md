@@ -6,6 +6,7 @@
 使用的数据集车牌号的分布
 ![](https://github.com/youngx123/CarPlateRecognition/blob/master/img/data_distribution.png?raw=true)
 
+### CTCLoss(连接时序分类损失函数)
 在车牌号码识别中, 若 `ctc=True`,则使用`torch.nn.CTCLoss()`损失函数，可以忽略由于蓝牌和新能源车牌造成的车牌号位数不一致的问题。
 不需要在数据生成器中额外对车牌号进行对齐处理。
 ```python
@@ -44,7 +45,7 @@ target_lengths : 每个标签的长度
 
 识别中使用 Sigmoid 函数效果和使用Softmax函数效果对比
 
-
+### 车牌识别结果
 车牌识别结果：(数据集问题导致省份识别结果较差)
 ```python
 input label :  0_0_0_0_24_30_26 蓝牌
