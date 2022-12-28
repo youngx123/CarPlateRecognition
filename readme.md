@@ -7,6 +7,40 @@
 ![](https://github.com/youngx123/CarPlateRecognition/blob/master/img/data_distribution.png?raw=true)
 
 ### CTCLoss(连接时序分类损失函数)
+__torch.nn.CTCLoss(blank=len(CHARS)-1, reduction='mean')__
+
+__blank:__ __空白标签的label值__，__默认为0__，需要根据实际的标签定义进行设定；
+在预测文本时，一般都是 __有一个空白字符的__，整个 __blank表示的是__ `空白字符在总字符集中的位置`。
+
+__reduction:__ 处理output losses的方式，string类型，可选`none` 、 `mean` 及 `sum`，
+`none`表示对output losses不做任何处理，
+`mean` 则对output losses (即输出的整个batch_size的损失做操作) 取平均值处理，
+`sum`则是对output losses求和处理，
+默认为`mean` 。
+```python
+比如需要预测的字符集如下，其中'-'表示空白标签；
+
+CHARS = ['京', '沪', '津', '渝', '冀', '晋', '蒙', '辽', '吉', '黑',
+         '苏', '浙', '皖', '闽', '赣', '鲁', '豫', '鄂', '湘', '粤',
+         '桂', '琼', '川', '贵', '云', '藏', '陕', '甘', '青', '宁',
+         '新',
+         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K',
+         'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+         'W', 'X', 'Y', 'Z', 'I', 'O', '-'
+         ]
+
+因为空白标签所在的位置为 len(CHARS)-1，需要处理 CTCLoss output losses 的方式为 `mean`，
+则需要按照如下方式初始化CTCLoss类：
+
+ctc_loss = nn.CTCLoss(blank=len(CHARS)-1, reduction='mean')
+
+湘E269JY  -->> 18, 45, 33, 37, 40, 49, 63 
+冀PL3N67  -->> 4, 54, 51, 34, 53, 37, 38
+川R67283F -->> 22, 56, 37, 38,33, 39, 34, 46
+津AD68429 -->> 2, 41, 44, 37, 39, 35, 33, 40 
+```
+
 在车牌号码识别中, 若 `ctc=True`,则使用`torch.nn.CTCLoss()`损失函数，可以忽略由于蓝牌和新能源车牌造成的车牌号位数不一致的问题。
 不需要在数据生成器中额外对车牌号进行对齐处理。
 ```python
@@ -47,44 +81,41 @@ target_lengths : 每个标签的长度
 
 ### 车牌识别结果
 车牌识别结果：(数据集问题导致省份识别结果较差)
-```python
-input label :  0_0_0_0_24_30_26 蓝牌
-pred  label :  0_0_0_0_24_30_26 蓝牌
-****************************************
-input label :  0_0_0_0_24_31_30 蓝牌
-pred  label :  0_0_0_0_24_31_30 蓝牌
-****************************************
-input label :  0_0_0_0_25_32_27 蓝牌
-pred  label :  0_0_0_0_25_32_27 蓝牌
-****************************************
-input label :  0_0_0_0_26_24_24 蓝牌
-pred  label :  0_0_0_0_26_24_24 蓝牌
-****************************************
-input label :  0_0_0_0_27_28_27 蓝牌
-pred  label :  0_0_0_0_27_28_27 蓝牌
-****************************************
-input label :  0_0_0_1_26_28_31 蓝牌
-pred  label :  0_0_0_1_26_28_31 蓝牌
-****************************************
-input label :  26_6_33_0_33_24_33 蓝牌
-pred  label :  0_6_33_0_33_24_33 蓝牌
-****************************************
-input label :  26_7_13_13_33_31_31 蓝牌
-pred  label :  0_7_13_13_33_31_31 蓝牌
-****************************************
-input label :  27_0_23_15_33_31_30 蓝牌
-pred  label :  0_0_23_15_33_31_30 蓝牌
-****************************************
-input label :  27_11_1_7_29_29_32 蓝牌
-pred  label :  0_11_1_7_29_29_32 蓝牌
-****************************************
-input label :  28_0_10_2_29_30_32 蓝牌
-pred  label :  0_0_10_2_29_30_32 蓝牌
-****************************************
-input label :  29_0_5_25_31_29_29_29 绿牌
-pred  label :  0_0_5_25_31_29_29_29 绿牌
-****************************************
-```
-  CTC decode
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_24_27_26_25.png"/> 
+input label :  0_0_3_1_24_27_26_25 绿牌
+
+pred  label :  0_0_3_1_24_27_26_25 绿牌
+
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_24_31_27_29.png"/> 
+input label :  0_0_3_1_24_31_27_29 绿牌
+
+pred  label :  0_0_3_1_25_31_27_29 绿牌
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_25_25_26_27.png"/> 
+input label :  0_0_3_1_25_25_26_27 绿牌
+
+pred  label :  0_0_3_1_25_25_26_27 绿牌
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_25_26_26_30.png"/> 
+input label :  0_0_3_1_25_26_26_30 绿牌
+
+pred  label :  0_0_3_1_25_26_26_30 绿牌
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_28_29_30_30.png"/> 
+input label :  0_0_3_1_28_29_30_30 绿牌
+
+pred  label :  0_0_3_1_28_29_30_30 绿牌
+
+<img style="margin:0px ;display:block" width=200 src="./img/0_0_3_1_28_31_31_31.png"/> 
+input label :  0_0_3_1_28_31_31_31 绿牌
+
+pred  label :  0_0_3_1_28_31_31_31 绿牌
+
+
+
+CTC Loss Function
 
 >https://github.com/meijieru/crnn.pytorch/blob/master/utils.py
+>https://zhuanlan.zhihu.com/p/67415439

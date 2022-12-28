@@ -10,6 +10,7 @@ import numpy as np
 import imageio
 import cv2
 import albumentations as A
+
 provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣", "鲁", "豫",
              "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
 
@@ -122,16 +123,16 @@ class carNumloder(Dataset):
 
         self.ImageList = self.ImageList[:self.num]
 
-        self.transform = A.Compose([
-            A.RandomScale(scale_limit=(0.9, 1.3)),
-            A.RandomCrop(width=self.imagesize[1], height=self.imagesize[0]),
-            A.OneOf([
-                A.IAAAdditiveGaussianNoise(),
-                A.GaussNoise(),
-            ], p=0.2),
-            A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.3, p=0.9),
-            A.ColorJitter(brightness=0.5, contrast=0.5, hue=0.5),
-        ])
+        # self.transform = A.Compose([
+        #     A.RandomScale(scale_limit=(0.9, 1.3)),
+        #     A.RandomCrop(width=self.imagesize[1], height=self.imagesize[0]),
+        #     A.OneOf([
+        #         A.IAAAdditiveGaussianNoise(),
+        #         A.GaussNoise(),
+        #     ], p=0.2),
+        #     A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.3, p=0.9),
+        #     A.ColorJitter(brightness=0.5, contrast=0.5, hue=0.5),
+        # ])
 
     def __len__(self):
         return len(self.ImageList)
@@ -176,9 +177,9 @@ class carNumloder(Dataset):
         image = cv2.resize(image, (newW, newH))
 
         new_image[:newH, :newW, :] = image[:, :, :3]
-        if np.random.random() > 0.6:
-            transformed = self.transform(image=new_image)
-            new_image = transformed['image']
+        # if np.random.random() > 0.6:
+        #     transformed = self.transform(image=new_image)
+        #     new_image = transformed['image']
 
         new_image = new_image.transpose(2, 0, 1).astype(np.float)
         new_image = torch.from_numpy(new_image)
@@ -187,7 +188,7 @@ class carNumloder(Dataset):
 
 
 if __name__ == '__main__':
-    traindata = dataloder(imagesize=512, dirpath=r"D:\MyNAS\CarPlate\dataset\segtrain\image", number=None)
-    traindata = carNumloder(imagesize=(64, 196), dirpath=r"D:\MyNAS\CarPlate\dataset\recgtrain\image1", number=None)
-    for i in range(10000):
+    # traindata = dataloder(imagesize=512, dirpath=r"D:\MyNAS\CarPlate\dataset\segtrain\image", number=None)
+    traindata = carNumloder(imagesize=(64, 196), dirpath=r"E:\CarPlateRecognition\dataset\recgtrain\image", number=None, ctc=True)
+    for i in range(1000):
         bathc = traindata.__getitem__(i)

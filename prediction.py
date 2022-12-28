@@ -109,7 +109,7 @@ def evalRcgModel(rcgpath):
         "dataset/test/rcgtest/0_0_0_1_26_28_31.png",
         "dataset/test/rcgtest/29_0_5_25_31_29_29_29.png"
     ]
-    imgdir = r"D:\MyNAS\CarPlate\dataset\test\rcgtest"
+    imgdir = r"E:\CarPlateRecognition\dataset\recgtrain\mask"
     imgpath = os.listdir(imgdir)
     imgpath = [os.path.join(imgdir, file) for file in imgpath]
     for file in imgpath:
