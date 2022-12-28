@@ -118,4 +118,5 @@ pred  label :  0_0_3_1_28_31_31_31 绿牌
 CTC Loss Function
 
 >https://github.com/meijieru/crnn.pytorch/blob/master/utils.py
+
 >https://zhuanlan.zhihu.com/p/67415439
